@@ -13,14 +13,14 @@ class MySshClient:
         self._std_in = None
         self._std_out = None
         self._std_err = None
+        self._sftp = None
 
     def initialize(self):
         self._key = paramiko.RSAKey.from_private_key_file(self._private_key_file)
         self._client = paramiko.SSHClient()
-        self._client.load_system_host_keys()
-
-        self._client.load_system_host_keys(self._host_name)
+        self._client.load_system_host_keys(self._host_key_file)
         self._client.connect(self._host_name, self._port, self._user_name, pkey=self._key)
+        self._sftp = self._client.open_sftp()
 
     def exec_command(self, cmd):
         std_in, std_out, std_err = self._client.exec_command(cmd)
@@ -28,6 +28,12 @@ class MySshClient:
         self._std_out = std_out.read()
         self._std_err = std_err.read()
         return self._std_in, self._std_out, self._std_err
+
+    def upload_file(self, local_file, remote_file):
+        return self._sftp.put(local_file, remote_file)
+
+    def download_file(self, local_file, remote_file):
+        return self._sftp.get(remote_file, local_file)
 
     def close(self):
         self._client.close()
